@@ -1,27 +1,54 @@
-# Build stage
-FROM node:20-alpine AS build
-WORKDIR /usr/src/app
+name: React App CI/CD
 
-COPY package*.json ./
-RUN npm ci
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-COPY . .
-RUN npm run build
+jobs:
+  build-and-push-docker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-# Production stage
-FROM node:20-alpine AS prod
-WORKDIR /usr/src/app
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-COPY package*.json ./
-RUN npm ci --production
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-COPY --from=build /usr/src/app/dist ./dist
-COPY --from=build /usr/src/app/server.js ./server.js
-COPY --from=build /usr/src/app/src/data/products.js ./src/data/products.js
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          no-cache: true
+          tags: |
+            marknattawut/devop830-pipeline:latest
+            marknattawut/devop830-pipeline:${{ github.sha }}
 
-EXPOSE 4000
-
-# default environment, optional
-ENV NODE_ENV=production
-
-CMD ["node", "server.js"]
+  deploy:
+    needs: build-and-push-docker-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            docker pull marknattawut/devop830-pipeline:latest
+            docker stop sizentag-app || true
+            docker rm sizentag-app || true
+            docker run -d \
+              --name sizentag-app \
+              -p 80:4000 \
+              --restart always \
+              marknattawut/devop830-pipeline:latest
+            docker image prune -af
