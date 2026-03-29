@@ -27,7 +27,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: nattawutmark/devop830-pipeline:latest
+          tags: nattawutmark/Devop830-pipeline:latest
 
   deploy:
     needs: build-and-push-docker-image
@@ -40,7 +40,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            docker pull nattawutmark/devop830-pipeline:latest
+            docker pull nattawutmark/Devop830-pipeline:latest
             docker stop sizentag-app || true
             docker rm sizentag-app || true
-            docker run -d --name sizentag-app -p 80:4000 nattawutmark/devop830-pipeline:latest
+            docker run -d --name sizentag-app -p 80:4000 nattawutmark/Devop830-pipeline:latest
