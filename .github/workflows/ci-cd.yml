@@ -29,7 +29,7 @@ jobs:
           push: true
           # เปลี่ยนจาก: your-username/your-repo-name
           # เป็น: ชื่อ Docker Hub ของคุณ
-          tags: marknattawut/devop830-pipeline:latest
+          tags: nattawutmark/Devop830-pipeline:latest
 
   deploy:
     needs: build-and-push-docker-image
@@ -43,7 +43,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           # สคริปต์ที่จะไปรันบนเซิร์ฟเวอร์ของคุณเพื่อดึง Image ใหม่มาเปิด
           script: |
-            docker pull marknattawut/devop830-pipeline:latest
+            docker pull nattawutmark/Devop830-pipeline:latest
             docker stop sizentag-app || true
             docker rm sizentag-app || true
-            docker run -d --name sizentag-app -p 80:4000 marknattawut/devop830-pipeline:latest
+            docker run -d --name sizentag-app -p 80:80 nattawutmark/Devop830-pipeline:latest
