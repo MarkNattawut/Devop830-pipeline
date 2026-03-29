@@ -1,46 +1,32 @@
-name: React App CI/CD
+# ---------- Build Stage ----------
+FROM node:20-alpine AS build
 
-on:
-  push:
-    branches:
-      - main
+WORKDIR /app
 
-jobs:
-  build-and-push-docker-image:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+COPY package*.json ./
+RUN npm ci
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+COPY . .
+RUN npm run build
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: nattawutmark/Devop830-pipeline:latest
+# ---------- Production Stage ----------
+FROM node:20-alpine
 
-  deploy:
-    needs: build-and-push-docker-image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to Server via SSH
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            docker pull nattawutmark/Devop830-pipeline:latest
-            docker stop sizentag-app || true
-            docker rm sizentag-app || true
-            docker run -d --name sizentag-app -p 80:80 nattawutmark/Devop830-pipeline:latest
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# copy build output (Vite)
+COPY --from=build /app/dist ./dist
+
+# copy backend
+COPY --from=build /app/server.js ./server.js
+COPY --from=build /app/src/data/products.js ./src/data/products.js
+
+EXPOSE 80
+
+ENV NODE_ENV=production
+
+CMD ["node", "server.js"]
