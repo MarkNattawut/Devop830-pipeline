@@ -43,4 +43,4 @@ jobs:
             docker pull nattawutmark/Devop830-pipeline:latest
             docker stop sizentag-app || true
             docker rm sizentag-app || true
-            docker run -d --name sizentag-app -p 80:4000 nattawutmark/Devop830-pipeline:latest
+            docker run -d --name sizentag-app -p 80:80 nattawutmark/Devop830-pipeline:latest
