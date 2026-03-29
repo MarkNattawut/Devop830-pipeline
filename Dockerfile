@@ -1,4 +1,4 @@
-name: SIZE N TAG App CI/CD
+name: React App CI/CD
 
 on:
   push:
